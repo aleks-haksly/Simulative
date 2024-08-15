@@ -1,9 +1,12 @@
-????????;??????;?????;CR, %;?????????, ???;CPC, ???;?????????????? ???????????;CPL, ???;???????, ??;CR, %;ARPU, ???;LTV, ???;CAC, ???
-?????????? | ?????;5318;473;;64369;;99;;14;;;;
-IT Resume | ???;6880;736;;33863;;139;;24;;;;
-IT Resume | ???;9398;1043;;118922;;187;;47;;;;
-IT Resume | 18-25;9536;1221;;152576;;256;;34;;;;
-Skillbox | ???????;6461;239;;16256;;54;;14;;;;
-Skillbox | ??????;7367;803;;44968;;160;;34;;;;
-SQL, PostgreSQL  | ????? 2 ???;8314;1048;;133041;;261;;55;;;;
-Specific;6866;398;;20708;;79;;19;;;;
+Campaign,Impressions,Clicks,CR_%,Spent,CPC,Confirmed Registrations,CPL,Purchases,CR_%,ARPU,LTV,CAC
+General Keywords | All Russia | 18-55 years,8820,970,,153292,213,32,,,,,
+General Keywords | Moscow | 18-55 years,7095,858,,139076,137,33,,,,,
+General Keywords | Saint Petersburg | 18-55 years,8999,495,,54444,103,26,,,,,
+General Keywords | All Russia | 18-25 years | Youth,5689,506,,35442,101,11,,,,,
+Specific | All Russia | 18-25 years,5592,570,,13119,125,19,,,,,
+Specific | All Russia | 25-55 years,5257,710,,44711,141,23,,,,,
+SQL | Moscow,8148,1206,,207415,289,73,,,,,
+SQL | Saint Petersburg,7375,774,,73566,185,45,,,,,
+SQL | Regions,9403,1044,,150298,229,53,,,,,
+MS SQL Server | All Russia,6846,479,,53193,71,14,,,,,
+Retargeting,6666,507,,76499,121,15,,,,,
