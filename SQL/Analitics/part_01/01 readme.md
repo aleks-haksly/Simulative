@@ -8,13 +8,14 @@
 * Метрики привлечения (Metrics for Acquisition) e.g.:
   -  **CPI (Cost Per Install)** = **Total Cost** / **Number of Installs** это моментальный срез, который имеет смысл только если отслеживать другие показатели (LTV, DAU, ARPU, ... )
   -  **ARPU (Average Revenue Per User)** = **Total Revenue** / **Number of Users** эта метрика также важнап не сама по себе, а совокупности c другими (e/g.: LTV:CAC (Customer Acquisition Cost))
-  -  **LTV (Lifetime Value)** = **ARPU (Average Revenue Per User)** × **Average Customer Lifespan**
+  -  **[LTV](https://leftjoin.ru/all/modeling-ltv-with-sql/) (Lifetime Value)** = **ARPU (Average Revenue Per User)** × **Average Customer Lifespan**
      - **LTV (Lifetime Value)** = **Gross Margin %** × **(1 / Monthly Churn Rate)** × **Average Monthly Subscription Revenue per Customer**
      - Хорошее эмпирическое правило гласит: если LTV/CAC не превышает 3, вы тратите слишком много средств на привлечение
 * Метрики вовлеченности (Metrics for Engagement)
-  - DAU/WAU/MAU - популярная метрика вовлеченности пользователей - это отношение количества ежедневных активных пользователей к количеству ежемесячных активных пользователей, выраженное в процентах. Обычно считается, что более 20% - это хорошо, а 50%+ - это мировой уровень.
+  - [DAU/WAU/MAU](https://www.devtodev.com/education/articles/en/399/sql-for-beginners-how-to-calculate-dau-wau-mau) - популярная метрика вовлеченности пользователей - это отношение количества ежедневных активных пользователей к количеству ежемесячных активных пользователей, выраженное в процентах. Обычно считается, что более 20% - это хорошо, а 50%+ - это мировой уровень.
     - Соотношение DAU/MAU (или коэффициент “прилипания”) Причина, по которой это число важно, заключается в том, что доход генерируется "постоянным количеством активных пользователей". Именно повторные клиенты, преданные вашему продукту или услуге, помогут стимулировать рост. Число, превышающее 20 процентов, обычно считается хорошим показателем, а 3% это минимум, который вообще бывает. Но для некоторых бизнесов (aviasales, airbnb) это бессмысленно
-  - Коэффициент удержания клиентов (RR или Retention Rate)  **RR (Retention Rate)** = [(**Number of Customers at End of Period** - **Number of New Customers Acquired During Period**) / **Number of Customers at Start of Period**] × 100%
+    - WAU <> 7*DAU, MAU <> 4*WAU
+  - Коэффициент удержания клиентов (RR или [Retention Rate](https://leftjoin.ru/all/retention-rate/)) = [(**Number of Customers at End of Period** - **Number of New Customers Acquired During Period**) / **Number of Customers at Start of Period**] × 100%
   - **Churn Rate** = (**Number of Customers Lost During Period** / **Number of Customers at Start of Period**) × 100%
       - Но как определить, что клинет в оттоке? Разные компании делают это по-разному
 * Метрики производительности (Performance Metrics) - Показатели эффективности используются для измерения поведения, деятельности и результативности бизнеса.
@@ -24,4 +25,32 @@
       - Средний уровень сбоев для мобильных устройств составляет 1 - 2%, поэтому стремиться к 98% пользователей без сбоев
   - Время отклика (App Latency)
       - Среда передачи, распространения, *!задержки при хранении данных!*
-  
+
+### RETENTION
+* n-day retention (доля вернувшихся в день = n) обычно day = [1, 3, 7, 14] m=[1, 3] y=[1, ]
+* rolling retention (доля вернувшихся в день >= n)
+* full retention (доля возвращавшихся в каждый день, включая n)
+* return retention (доля вернувшихся в любой из дней <= n)
+
+### ПРОЧИЕ ПРОДУКТОВЫЕ МЕТРИКИ
+* Session duration - длительность сессии. Играет роль для таких сервисов,
+как Netflix или Spotify. Да и для IT Resume важно, на самом деле - чем
+больше времени люди у нас проводят, тем больше задач решают, тем
+больше вероятность покупки.
+
+
+* SF (недельный) = DAU / WAU * 100%
+* SF (месячный) = DAU / MAU * 100%
+* Visits - количество посетителей на сайте
+* Repeat customers - доля клиентов, которые сделали повторный заказ
+* Shopping cart abandonment - доля посетителей, которые добавили товар в
+корзину, но не оформили заказ
+* Downloads - количество загрузок приложения
+* Activations rate - доля пользователей, которые запустили приложение
+после загрузки
+* Page depth - глубина просмотра сайта, количество просмотренных страниц
+* Bounce rate - показатель отказов на сайте (ушли с сайта в течение 10 секунд)
+* Cost Per Acquisition - стоимость привлечения лида (по сути, CPL)
+* GVM - выручка, сгенерированная всеми мерчантами маркетплейса
+* Monthly Recurring Revenue - сумма, которую платят клиенты за месяц
+использования продукта
