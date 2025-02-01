@@ -83,6 +83,9 @@ def get_top_movies(movies, ratings, n_top=10, watch_limit=30):
 
 def user_activity_hist(df: pd.Series):
     fig = px.histogram(df, x='count', nbins=30)
+    fig.update_traces(marker_color="#80B1D3")  # Установка цвета столбцов
+    fig.update_xaxes(title_text="Number of movies rated")  # Подпись оси X
+    fig.update_yaxes(title_text="Users count")  # Подпись оси Y
     fig.update_layout(
         height=250,  # Высота графика
         margin=dict(
@@ -111,3 +114,17 @@ def pie_chart(df: pd.DataFrame, category: str, value: str):
         )
     )
     return fig
+"""
+def get_user_last_movies(userId, ratings = ratings_df, movies=movies_df, model=best_model, limit=3):
+
+    watched_movies = ratings.loc[ratings["userId"] == userId].sort_values(by="timestamp", ascending=False).head(limit)
+
+    watched_movies = watched_movies.merge(movies, how='left', on='movieId')
+    rating_movie_mean = model.named_steps.Custom_transf.rating_movie_mean
+    watched_movies['mean_raing'] = watched_movies.movieId.map(rating_movie_mean)
+    watched_movies['user_rating / movie_rating'] = watched_movies["rating"].astype('str') + ' / ' +  watched_movies['mean_raing'].astype('str')
+    watched_movies.drop(columns=["userId", "timestamp", "movieId"], inplace=True)
+    watched_movies = watched_movies[["title",  "user_rating / movie_rating", "genres"]]
+    watched_movies["urls"] = [f'<img src="{_}">' for _ in  get_img_urls(watched_movies.title.to_list())]
+    return watched_movies
+"""
