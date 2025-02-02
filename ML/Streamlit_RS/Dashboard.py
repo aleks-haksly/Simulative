@@ -7,7 +7,7 @@ from helpers.functions import (get_csv_data, get_movies_statistics,
 RATINGS_DF_PATH = "./datasets/ratings_df.csv"
 MOVIES_DF_PATH = "./datasets/movies_df.csv"
 LOGO_PATH = "static/hiclipart.com.png"
-
+WATCH_LIMIT=50
 # ---Logo----------------
 st.logo(LOGO_PATH, link="https://streamlit.io/gallery", icon_image=LOGO_PATH)
 
@@ -22,7 +22,7 @@ with col2:
 loading_data = st.text("Loading datasets...")
 ratings_df = get_csv_data(RATINGS_DF_PATH)
 
-movies_df = get_csv_data(MOVIES_DF_PATH, index_col="movieId")
+movies_df = get_csv_data(MOVIES_DF_PATH) # index_col="movieId")
 
 # ---Calculating movies statistics---------
 loading_data.text("Calculating statistics...")
@@ -35,13 +35,13 @@ col1.metric("Movies count", f"{movies_statistics.get('movies_count'): ,}")
 col2.metric(
     "Active users",
     f"{movies_statistics.get('users_ratings').get('now').loc['nunique'].values[0]: ,}",
-    f"{movies_statistics.get('users_ratings').get('delta_previous_month').loc['nunique'].values[0]: ,} vs prev. month",
+    f"{movies_statistics.get('users_ratings').get('delta_previous_month').loc['nunique'].values[0]: ,} vs prev mth",
 )
 
 col3.metric(
     "User rating count",
     f"{movies_statistics.get('users_ratings').get('now').loc['count'].values[0]: ,}",
-    f"{movies_statistics.get('users_ratings').get('delta_previous_month').loc['count'].values[0]: ,} vs prev. month",
+    f"{movies_statistics.get('users_ratings').get('delta_previous_month').loc['count'].values[0]: ,} vs prev mth",
 )
 
 # ---Bar Charts ---------------------
@@ -75,8 +75,8 @@ with st.container():
             x="rating",
             y="count",
             height=280,
-            y_label="Users count",
-            x_label="Rating",
+            y_label="Rating count",
+            x_label="Movie Rating",
             color="#FDB462",
         )
     with col6:
@@ -86,15 +86,16 @@ with st.container():
         )
 
 loading_data = st.text("Loading top movies...")
-top_movies_df = get_top_movies(movies_df, ratings_df, n_top=10, watch_limit=50)
+top_movies_df = get_top_movies(movies_df, ratings_df, n_top=10, watch_limit=WATCH_LIMIT)
 # top_movies_df = top_movies_df.style.set_properties(**{'line-height': '100px'})
 loading_data.text("")
 
-st.markdown(f"### Top-{top_movies_df.shape[0]} movies by mean rating")
+st.markdown(f"### Top-{top_movies_df.shape[0]} movies by mean rating",
+            help=f"Movies with at least {WATCH_LIMIT} ratings")
 st.data_editor(
     top_movies_df,
     column_config={
-        "Preview Image": st.column_config.ImageColumn(),
+        "Cover": st.column_config.ImageColumn(),
         "Mean rating": st.column_config.NumberColumn(format="%.2f"),
     },
     use_container_width=True,
@@ -103,3 +104,4 @@ st.data_editor(
 
 # st.cache_data.clear()
 # st.json(user_data_df)
+#st.cache_data.clear()
