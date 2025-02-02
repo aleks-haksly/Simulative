@@ -28,6 +28,11 @@ if "avatar" not in st.session_state:
     st.session_state["avatar"] = get_image(AVATAR_PATH)
 avatar = st.session_state["avatar"]
 
+# ---Sidebar-----------------------------
+with st.sidebar:
+    st.markdown(f"""**User name:** {user_names_df.iloc[st.session_state['UserId']].user_name}<br>**ID:** {st.session_state['UserId']}""",
+                unsafe_allow_html=True)
+
 # ---Page header---------
 col1, col2, col3, col4 = st.columns([1, 5, 2, 2,])
 with col1:
@@ -39,10 +44,6 @@ with col2:
         unsafe_allow_html=True,
     )
 
-# ---Sidebar-----------------------------
-with st.sidebar:
-    st.markdown(f"""**User name:** {user_names_df.iloc[st.session_state['UserId']].user_name}<br>**ID:** {st.session_state['UserId']}""",
-                unsafe_allow_html=True)
 # ---Indictors----------------------------
 col3.metric(
     "Movies watched",
@@ -59,6 +60,7 @@ col4.metric(
     delta_color="inverse",
     help="Rank by movies watched number"
 )
+
 # ---Watched movies-------------------------
 loading_model = st.text("Loading model...")
 model = model_load(MODEL_PATH)

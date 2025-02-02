@@ -1,7 +1,8 @@
-from time import sleep
-import joblib
-from io import BytesIO
 import gzip
+from io import BytesIO
+from time import sleep
+
+import joblib
 import pandas as pd
 import plotly.express as px
 import requests
@@ -10,7 +11,6 @@ from bs4 import BeautifulSoup as bs
 from fake_useragent import UserAgent
 from requests import Session
 from sklearn.preprocessing import MultiLabelBinarizer
-
 
 
 @st.cache_data
@@ -55,7 +55,6 @@ def get_movies_statistics(movies, ratings):
         .sort_values(by="count", ascending=False)
     )
     genres = genres.mul(ratings.rating, axis=0)
-    # result['genres_mean_ratings'] = genres.apply(lambda x: round(np.mean([_ for _ in x if _ > 0]), 2))
     result["genres_rating_distribution"] = {
         col: genres[col][genres[col] != 0].value_counts().to_dict() for col in genres.columns
     }
@@ -79,6 +78,7 @@ def preserve_sorting_df(df: pd.DataFrame, cat_column) -> pd.DataFrame:
     )
     return df_sorted
 
+
 @st.cache_data
 def get_img_urls(titles_list):
     url_list = []
@@ -98,13 +98,14 @@ def get_img_urls(titles_list):
             return f"Произошла ошибка: {e}"
     return url_list
 
+
 @st.cache_data
 def get_img_urls_big(titles_list):
     url_list = []
     ua = UserAgent()
     session = Session()
     session.headers.update({"User-Agent": ua.random})
-    if titles_list.isinstance(str):
+    if isinstance(titles_list, str):
         titles_list = [titles_list]
     for t in titles_list:
         try:
@@ -120,8 +121,10 @@ def get_img_urls_big(titles_list):
 
         except Exception as e:
             url_list.append(None)
-        sleep(0.5)
-    return url_list if len(url_list) > 1 else url_list[0]
+        sleep(0.2)
+    if url_list:
+        return url_list if len(url_list) > 1 else url_list[0]
+
 
 @st.cache_data
 def get_top_movies(movies, ratings, n_top=10, watch_limit=30):
@@ -172,6 +175,7 @@ def pie_chart(df: pd.DataFrame, category: str, value: str):
     )
     return fig
 
+
 # ---Model -----------------------------
 @st.cache_resource
 def model_load(path):
@@ -179,35 +183,50 @@ def model_load(path):
         loaded_model = joblib.load(f)
     return loaded_model
 
+
 @st.cache_data
 def get_user_last_movies(userId, ratings, movies, _model, limit=3):
-    watched_movies = ratings.loc[ratings["userId"] == userId].sort_values(by="timestamp", ascending=False).head(limit)
-    watched_movies = watched_movies.merge(movies, how='left', on='movieId')
+    watched_movies = (
+        ratings.loc[ratings["userId"] == userId]
+        .sort_values(by="timestamp", ascending=False)
+        .head(limit)
+    )
+    watched_movies = watched_movies.merge(movies, how="left", on="movieId")
     rating_movie_mean = _model.named_steps.Custom_transf.rating_movie_mean
-    watched_movies['mean_raing'] = watched_movies.movieId.map(rating_movie_mean)
-    watched_movies['user_rating / movie_rating'] = watched_movies["rating"].astype('str') + ' / ' +  watched_movies['mean_raing'].apply(lambda x: str(round(x, 1)))
+    watched_movies["mean_raing"] = watched_movies.movieId.map(rating_movie_mean)
+    watched_movies["user_rating / movie_rating"] = (
+        watched_movies["rating"].astype("str")
+        + " / "
+        + watched_movies["mean_raing"].apply(lambda x: str(round(x, 1)))
+    )
     watched_movies.drop(columns=["userId", "timestamp", "movieId"], inplace=True)
-    watched_movies = watched_movies[["title",  "user_rating / movie_rating", "genres"]]
-    watched_movies["genres"] = watched_movies["genres"].apply(lambda x: ", ".join(x.split('|')[:2]))
+    watched_movies = watched_movies[["title", "user_rating / movie_rating", "genres"]]
+    watched_movies["genres"] = watched_movies["genres"].apply(
+        lambda x: ", ".join(x.split("|")[:2])
+    )
     watched_movies["urls"] = get_img_urls(watched_movies.title.to_list())
     watched_movies.columns = ["Title", "User/Movie rating", "Genres", "Cover"]
     return watched_movies
 
+
 @st.cache_data
 def get_recommended_movies(userId, ratings, movies, _model, limit=5):
-  watched_movies = ratings.loc[ratings["userId"] == userId].movieId
-  unwatched_movies = set(movies.movieId).difference(watched_movies)
-  recommended_movies = pd.DataFrame(unwatched_movies, columns=['movieId'])
-  recommended_movies["userId"] = userId
-  recommended_movies["timestamp"] = ratings.timestamp.max()
-  recommended_movies['predicted_rating'] = _model.predict(recommended_movies)
-  recommended_movies = recommended_movies.sort_values(by="predicted_rating", ascending=False).head(limit)
-  recommended_movies = recommended_movies.merge(movies, how='left', on='movieId')
-  recommended_movies['predicted_rating'] = recommended_movies.predicted_rating.apply(lambda x: round(x, 1))
-  recommended_movies["urls"] = get_img_urls_big(recommended_movies.title.to_list())
+    watched_movies = ratings.loc[ratings["userId"] == userId].movieId
+    unwatched_movies = set(movies.movieId).difference(watched_movies)
+    recommended_movies = pd.DataFrame(unwatched_movies, columns=["movieId"])
+    recommended_movies["userId"] = userId
+    recommended_movies["timestamp"] = ratings.timestamp.max()
+    recommended_movies["predicted_rating"] = _model.predict(recommended_movies)
+    recommended_movies = recommended_movies.sort_values(
+        by="predicted_rating", ascending=False
+    ).head(limit)
+    recommended_movies = recommended_movies.merge(movies, how="left", on="movieId")
+    recommended_movies["predicted_rating"] = recommended_movies.predicted_rating.apply(
+        lambda x: round(x, 1)
+    )
+    recommended_movies["urls"] = get_img_urls_big(recommended_movies.title.to_list())
 
-
-  return recommended_movies[["title", "genres", "predicted_rating", "urls"]]
+    return recommended_movies[["title", "genres", "predicted_rating", "urls"]]
 
 
 def get_image(url):
