@@ -104,6 +104,8 @@ def get_img_urls_big(titles_list):
     ua = UserAgent()
     session = Session()
     session.headers.update({"User-Agent": ua.random})
+    if titles_list.isinstance(str):
+        titles_list = [titles_list]
     for t in titles_list:
         try:
             response = session.get(f"https://www.imdb.com/find/?q={requests.utils.quote(t)}")
@@ -118,8 +120,8 @@ def get_img_urls_big(titles_list):
 
         except Exception as e:
             url_list.append(None)
-        sleep(1)
-    return url_list
+        sleep(0.5)
+    return url_list if len(url_list) > 1 else url_list[0]
 
 @st.cache_data
 def get_top_movies(movies, ratings, n_top=10, watch_limit=30):
@@ -186,6 +188,7 @@ def get_user_last_movies(userId, ratings, movies, _model, limit=3):
     watched_movies['user_rating / movie_rating'] = watched_movies["rating"].astype('str') + ' / ' +  watched_movies['mean_raing'].apply(lambda x: str(round(x, 1)))
     watched_movies.drop(columns=["userId", "timestamp", "movieId"], inplace=True)
     watched_movies = watched_movies[["title",  "user_rating / movie_rating", "genres"]]
+    watched_movies["genres"] = watched_movies["genres"].apply(lambda x: ", ".join(x.split('|')[:2]))
     watched_movies["urls"] = get_img_urls(watched_movies.title.to_list())
     watched_movies.columns = ["Title", "User/Movie rating", "Genres", "Cover"]
     return watched_movies

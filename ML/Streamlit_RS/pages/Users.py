@@ -70,6 +70,7 @@ st.markdown(f"### Last watched movies")
 st.data_editor(
     user_last_movies,
     column_config={
+        "Title": st.column_config.TextColumn(),
         "Cover": st.column_config.ImageColumn(),
         "User/Movie rating": st.column_config.TextColumn(label="Rating", help="User rating/Movie mean rating", width='small'),
         "Genres": st.column_config.TextColumn(width="medium")
@@ -98,13 +99,13 @@ recommended_movies_loading.text("")
 
 
 TITLE_HEIGHT = 100
-GENRES_HEIGHT = 100
+GENRES_HEIGHT = 80
 RATING_HEIGHT = 20
 
 cols = st.columns(len(recommended_movies))
 for col, (_, row) in zip(cols, recommended_movies.iterrows()):
     with col:
-        st.image(row["urls"], width=150)
+        st.image(row["urls"], width=150 )
 
         # Use Markdown with CSS for fixed height
         st.markdown(
@@ -112,7 +113,7 @@ for col, (_, row) in zip(cols, recommended_movies.iterrows()):
             unsafe_allow_html=True,
         )
         st.markdown(
-            f'<div style="height:{GENRES_HEIGHT}px; text-align: center; font-style: italic;">{row["genres"]}</div>',
+            f'<div style="height:{GENRES_HEIGHT}px; text-align: center; font-style: italic;">{", ".join(row["genres"].split("|"))}</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
