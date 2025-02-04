@@ -1,135 +1,168 @@
-from random import randint
-import ast
-import streamlit as st
-from helpers.functions import get_csv_data, model_load, get_user_last_movies, get_image, get_recommended_movies
 import pandas as pd
+import streamlit as st
+from random import randint
 from helpers.cls import CustomTransformer
+from helpers.functions import (
+    get_csv_data, get_image, get_recommended_movies,
+    get_user_last_movies, model_load
+)
 
-# ---Constants---------
+# --- Constants ---
 RATINGS_DF_PATH = "./datasets/ratings_df.csv"
 MOVIES_DF_PATH = "./datasets/movies_df.csv"
 AVATAR_PATH = "https://i.pravatar.cc/100"
 USER_NAMES_PATH = "datasets/user_names.csv"
 USER_DATA_DF_PATH = "./datasets/user_data.csv"
+USER_DATA_DF_PATH_JSON = "./datasets/user_data.json"
 MODEL_PATH = "./model/best_model.pkl.gz"
 
-# ---Loading data---------
-loading_data = st.text("Loading datasets...")
+# --- Load Datasets ---
+loading_datasets = st.text("Loading datasets...")
 ratings_df = get_csv_data(RATINGS_DF_PATH)
-movies_df = get_csv_data(MOVIES_DF_PATH) # index_col="movieId")
+movies_df = get_csv_data(MOVIES_DF_PATH)
 user_names_df = get_csv_data(USER_NAMES_PATH, index_col="Unnamed: 0")
-user_data_df = get_csv_data(USER_DATA_DF_PATH)
-loading_data.text("")
+user_data_df = pd.read_json(USER_DATA_DF_PATH_JSON, compression='gzip')
 
+
+loading_datasets.text("")
+
+
+# --- User Session Handling ---
+def update_user_id():
+    """Updates the UserId in session state and resets avatar."""
+    st.session_state["UserId"] = st.session_state["new_user_id"]
+    st.session_state.pop("avatar", None)
+
+
+# Initialize session state variables
 if "UserId" not in st.session_state:
-    st.session_state["UserId"] = randint(1, 1200)
-userId = st.session_state["UserId"]
-
+    st.session_state["UserId"] = randint(1, 1199)
 if "avatar" not in st.session_state:
     st.session_state["avatar"] = get_image(AVATAR_PATH)
+
+userId = st.session_state["UserId"]
 avatar = st.session_state["avatar"]
 
-# ---Sidebar-----------------------------
+
+rating_distribution = user_data_df.loc[userId, "rating_distribution"]
+rating_df = pd.DataFrame.from_dict(rating_distribution, orient="index").reset_index()
+rating_df.rename(columns={"index": "rating", 0: "values"}, inplace=True)
+
+
+# --- Sidebar (User Selection) ---
 with st.sidebar:
-    st.markdown(f"""**User name:** {user_names_df.iloc[st.session_state['UserId']].user_name}<br>**ID:** {st.session_state['UserId']}""",
-                unsafe_allow_html=True)
+    st.markdown(f"**User name:** {user_names_df.iloc[userId].user_name}")
+
+    # User ID input
+    col1, col2 = st.columns([1, 8])
+    with col1:
+        st.markdown('<div style="padding-top: 6px;"><b>ID:</b></div>', unsafe_allow_html=True)
+    with col2:
+        st.number_input(
+            "UserId", min_value=1, max_value=1200,
+            value=userId, step=1,
+            label_visibility="collapsed",
+            key="new_user_id", on_change=update_user_id
+        )
+
+    # Random user button
     if st.button("Random user"):
-        del st.session_state.UserId
-        del st.session_state.avatar
+        st.session_state.pop("UserId", None)
+        st.session_state.pop("avatar", None)
         st.rerun()
 
-# ---Page header---------
-col1, col2, col3, col4 = st.columns([1, 5, 2, 2,])
+# --- User Profile Header ---
+col1, col2, col3, col4 = st.columns([1, 5, 2, 2])
 with col1:
     st.image(avatar, width=100)
 with col2:
-    st.markdown(
-        f"""<H2>{user_names_df.iloc[st.session_state['UserId']].user_name}</H1><b>Last seen:</b>
-                {user_data_df.get('last_seen').iloc[userId][:-3]}""",
-        unsafe_allow_html=True,
-    )
+    last_seen = pd.to_datetime(user_data_df.loc[userId, "last_seen"], unit="ms").strftime("%Y-%m-%d %H:%M")
+    st.markdown(f"<H2>{user_names_df.iloc[userId].user_name}</H2><b>Last seen:</b> {last_seen}", unsafe_allow_html=True)
 
-# ---Indictors----------------------------
+# --- User Metrics ---
 col3.metric(
     "Movies watched",
-    f"{user_data_df.get('movies_watched').iloc[userId]: ,}",
-    f"""{user_data_df.get('movies_watched').iloc[userId] -
-         user_data_df.get('previous_watched').iloc[userId]: .0f} vs prev mth""",
+    f"{user_data_df.loc[userId, 'movies_watched']: ,}",
+    f"{user_data_df.loc[userId, 'movies_watched'] - user_data_df.loc[userId, 'previous_watched']: .0f} vs prev mth",
     border=False,
 )
 col4.metric(
     "User ranking",
-    f"{user_data_df.get('current_rank').iloc[userId]: .0f}",
-    f"""{user_data_df.get('current_rank').iloc[userId] -
-         user_data_df.get('previous_rank').iloc[userId]: .0f} vs prev mth""",
+    f"{user_data_df.loc[userId, 'current_rank']: .0f}",
+    f"{user_data_df.loc[userId, 'current_rank'] - user_data_df.loc[userId, 'previous_rank']: .0f} vs prev mth",
     delta_color="inverse",
-    help="Rank by movies watched number"
+    help="Rank by movies watched number",
 )
 
-# ---Watched movies-------------------------
-loading_model = st.text("Loading model...")
+# --- Recommended Movies ---
+loading_recommended = st.text("Loading recommended movies...")
 model = model_load(MODEL_PATH)
-loading_model.text(f"Loading {user_names_df.iloc[st.session_state['UserId']].user_name} last watched movies...")
-user_last_movies = get_user_last_movies(userId=st.session_state['UserId'], ratings=ratings_df, movies=movies_df, _model=model, limit=5)
-loading_model.text("")
+recommended_movies = get_recommended_movies(userId, ratings_df, movies_df, model, limit=5)
+loading_recommended.text("")
 
-st.markdown(f"### Last watched movies")
+TITLE_HEIGHT, GENRES_HEIGHT, RATING_HEIGHT = 100, 80, 20
+st.markdown("### Recommended Movies", help='Recommendation made with XGBoost model')
+cols = st.columns(len(recommended_movies))
+for col, (_, row) in zip(cols, recommended_movies.iterrows()):
+    with col:
+        st.image(row["urls"], width=150)
+        st.markdown(
+            f'<div style="height:{TITLE_HEIGHT}px; text-align: center; font-weight: bold;">{row["title"]}</div>',
+            unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="height:{GENRES_HEIGHT}px; text-align: center; font-style: italic;">{", ".join(row["genres"].split("|")[:3])}</div>',
+            unsafe_allow_html=True)
+        st.markdown(f'<div style="height:{RATING_HEIGHT}px; text-align: center;">⭐ {row["predicted_rating"]}</div>',
+                    unsafe_allow_html=True)
+
+# --- Watched Movies ---
+loading_last_movies = st.text("Loading last watched movies...")
+user_last_movies = get_user_last_movies(userId, ratings_df, movies_df, model, limit=5)
+loading_last_movies.text("")
+
+
+col1, col2 = st.columns([2, 3])
+with col1:
+    st.markdown("### Prefered genres")
+    st.data_editor(
+        pd.DataFrame.from_dict(user_data_df.loc[userId, "Top 3 genres"], orient='index'),
+        column_config={
+            "0": st.column_config.ProgressColumn(
+                "Prefered genres",
+                help="User's 3 prefered genres",
+                format="%.1f",
+                min_value=0,
+                max_value=5,
+            ),
+        },
+        hide_index=False, )
+with col2:
+    st.markdown("### User ratings distribution")
+    st.bar_chart(
+        rating_df,
+        x="rating", y="values",
+        height=220, y_label="Ratings count", x_label="Movie Rating",
+        color="#FDB462",
+    )
+
+
+st.markdown("### Last Watched Movies")
 st.data_editor(
     user_last_movies,
     column_config={
         "Title": st.column_config.TextColumn(),
         "Cover": st.column_config.ImageColumn(),
-        "User/Movie rating": st.column_config.TextColumn(label="Rating", help="User rating/Movie mean rating", width='small'),
-        "Genres": st.column_config.TextColumn(width="medium")
+        "User/Movie rating": st.column_config.TextColumn(label="Rating", help="User rating/Movie mean rating",
+                                                         width="small"),
+        "Genres": st.column_config.TextColumn(width="medium"),
     },
     use_container_width=True,
     hide_index=True,
 )
 
-st.bar_chart(
-    pd.DataFrame.from_dict(ast.literal_eval(user_data_df
-                                            .iloc[st.session_state['UserId']]
-                                            .get("rating_distribution")),
-                           orient='index')
-                .reset_index()\
-                .rename({"index": "rating", 0:"values"}, axis=1),
-    x="rating",
-    y="values",
-    height=280,
-    y_label="Ratings count",
-    x_label="Movie Rating",
-    color="#FDB462",)
-
-recommended_movies_loading = st.text(f"Loading {user_names_df.iloc[st.session_state['UserId']].user_name} recommended movies...")
-recommended_movies = get_recommended_movies(userId=st.session_state['UserId'], ratings=ratings_df, movies=movies_df, _model=model, limit=5)
-recommended_movies_loading.text("")
-
-
-TITLE_HEIGHT = 100
-GENRES_HEIGHT = 80
-RATING_HEIGHT = 20
-st.markdown(f"### Recommeded movies")
-cols = st.columns(len(recommended_movies))
-for col, (_, row) in zip(cols, recommended_movies.iterrows()):
-    with col:
-        st.image(row["urls"], width=150 )
-
-        # Use Markdown with CSS for fixed height
-        st.markdown(
-            f'<div style="height:{TITLE_HEIGHT}px; text-align: center; font-weight: bold;">{row["title"]}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div style="height:{GENRES_HEIGHT}px; text-align: center; font-style: italic;">{", ".join(row["genres"].split("|"))}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div style="height:{RATING_HEIGHT}px; text-align: center;">⭐ {row["predicted_rating"]}</div>',
-            unsafe_allow_html=True,
-        )
 
 
 
-#st.cache_data.clear()
-#model_load.clear()
-#st.cache_data.clear()
+
+
+

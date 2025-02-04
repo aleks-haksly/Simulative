@@ -54,10 +54,10 @@ def get_movies_statistics(movies, ratings):
         .rename({"index": "genre", 0: "count"}, axis=1)
         .sort_values(by="count", ascending=False)
     )
-    genres = genres.mul(ratings.rating, axis=0)
-    result["genres_rating_distribution"] = {
-        col: genres[col][genres[col] != 0].value_counts().to_dict() for col in genres.columns
-    }
+    #genres = genres.mul(ratings.rating, axis=0)
+    #result["genres_rating_distribution"] = {
+    #    col: genres[col][genres[col] != 0].value_counts().to_dict() for col in genres.columns
+    #}
     ratings["datetime"] = pd.to_datetime(ratings.timestamp, unit="s")
     users_ratings = ratings.agg({"userId": ["nunique", "count"]})
     result["users_ratings"] = {

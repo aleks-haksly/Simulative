@@ -14,17 +14,25 @@ WATCH_LIMIT=50
 # ---Logo----------------
 st.logo(LOGO_PATH, link="https://streamlit.io/gallery", icon_image=LOGO_PATH)
 
+
+
+
 # ---Page header---------
+
+st.set_page_config(page_title="Movies ratings analytics", page_icon=":movie_camera:", layout="centered", initial_sidebar_state="auto", menu_items={
+        'Report a bug': "https://t.me/alekshy",
+        'About': "### This streamlit app made using dataset from https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system/"
+    })
+
 col1, col2 = st.columns([1, 8])
 with col1:
     st.image(LOGO_PATH, width=100)
 with col2:
-    st.title("Movies ratings analytics")
+    st.title("Movies ratings analytics", help="Dataset from www.kaggle.com/datasets/parasharmanas/movie-recommendation-system/ EDA")
 
 # ---Loading data---------
 loading_data = st.text("Loading datasets...")
 ratings_df = get_csv_data(RATINGS_DF_PATH)
-
 movies_df = get_csv_data(MOVIES_DF_PATH) # index_col="movieId")
 
 # ---Calculating movies statistics---------
@@ -90,7 +98,6 @@ with st.container():
 
 loading_data = st.text("Loading top movies...")
 top_movies_df = get_top_movies(movies_df, ratings_df, n_top=10, watch_limit=WATCH_LIMIT)
-#top_movies_df = top_movies_df.style.set_properties(**{'line-height': '100px'})
 loading_data.text("")
 
 st.markdown(f"### Top-{top_movies_df.shape[0]} movies by mean rating",
