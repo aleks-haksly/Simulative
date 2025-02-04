@@ -2,20 +2,21 @@ from random import randint
 import ast
 import streamlit as st
 from helpers.functions import get_csv_data, model_load, get_user_last_movies, get_image, get_recommended_movies
-from Dashboard import ratings_df, movies_df
 import pandas as pd
 from helpers.cls import CustomTransformer
 
 # ---Constants---------
+RATINGS_DF_PATH = "./datasets/ratings_df.csv"
+MOVIES_DF_PATH = "./datasets/movies_df.csv"
 AVATAR_PATH = "https://i.pravatar.cc/100"
 USER_NAMES_PATH = "datasets/user_names.csv"
 USER_DATA_DF_PATH = "./datasets/user_data.csv"
 MODEL_PATH = "./model/best_model.pkl.gz"
-# ---Logo----------------
-#st.logo(LOGO_PATH_2, icon_image=LOGO_PATH_2)
 
 # ---Loading data---------
 loading_data = st.text("Loading datasets...")
+ratings_df = get_csv_data(RATINGS_DF_PATH)
+movies_df = get_csv_data(MOVIES_DF_PATH) # index_col="movieId")
 user_names_df = get_csv_data(USER_NAMES_PATH, index_col="Unnamed: 0")
 user_data_df = get_csv_data(USER_DATA_DF_PATH)
 loading_data.text("")
@@ -32,6 +33,10 @@ avatar = st.session_state["avatar"]
 with st.sidebar:
     st.markdown(f"""**User name:** {user_names_df.iloc[st.session_state['UserId']].user_name}<br>**ID:** {st.session_state['UserId']}""",
                 unsafe_allow_html=True)
+    if st.button("Random user"):
+        del st.session_state.UserId
+        del st.session_state.avatar
+        st.rerun()
 
 # ---Page header---------
 col1, col2, col3, col4 = st.columns([1, 5, 2, 2,])
@@ -103,7 +108,7 @@ recommended_movies_loading.text("")
 TITLE_HEIGHT = 100
 GENRES_HEIGHT = 80
 RATING_HEIGHT = 20
-
+st.markdown(f"### Recommeded movies")
 cols = st.columns(len(recommended_movies))
 for col, (_, row) in zip(cols, recommended_movies.iterrows()):
     with col:
@@ -125,6 +130,6 @@ for col, (_, row) in zip(cols, recommended_movies.iterrows()):
 
 
 
-
+#st.cache_data.clear()
 #model_load.clear()
 #st.cache_data.clear()

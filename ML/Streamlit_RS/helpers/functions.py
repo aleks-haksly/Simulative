@@ -1,7 +1,6 @@
 import gzip
 from io import BytesIO
-from time import sleep
-
+import sqlite3
 import joblib
 import pandas as pd
 import plotly.express as px
@@ -12,6 +11,7 @@ from fake_useragent import UserAgent
 from requests import Session
 from sklearn.preprocessing import MultiLabelBinarizer
 
+DB_PATH = "./database/movies.db"
 
 @st.cache_data
 def get_csv_data(filepath_or_buffer, compression="gzip", index_col=None):
@@ -99,31 +99,32 @@ def get_img_urls(titles_list):
     return url_list
 
 
-@st.cache_data
-def get_img_urls_big(titles_list):
-    url_list = []
-    ua = UserAgent()
-    session = Session()
-    session.headers.update({"User-Agent": ua.random})
-    if isinstance(titles_list, str):
-        titles_list = [titles_list]
-    for t in titles_list:
-        try:
-            response = session.get(f"https://www.imdb.com/find/?q={requests.utils.quote(t)}")
-            if response.status_code == 200:
-                movie_card = "https://www.imdb.com/" + \
-                             bs(response.text, features="html.parser").select_one(
-                                 ".ipc-metadata-list-summary-item__t").get("href")
-                response = session.get(movie_card)
-                if response.status_code == 200:
-                    url_list.append(
-                        bs(response.text, features="html.parser").select_one("div.ipc-media img").get("src"))
+def get_movie_covers(movie_ids, db_path=DB_PATH):
+    """
+    Получает список URL обложек фильмов по их movieId из базы данных.
+    Если movieId отсутствует в таблице, вместо URL будет 'No'.
 
-        except Exception as e:
-            url_list.append(None)
-        sleep(0.2)
-    if url_list:
-        return url_list if len(url_list) > 1 else url_list[0]
+    :param movie_ids: Список movieId.
+    :param db_path: Путь к файлу базы данных (по умолчанию "movies.db").
+    :return: Список URL, соответствующих movie_ids (или 'No', если записи нет).
+    """
+    placeholders = ",".join(["?"] * len(movie_ids))  # Создаём плейсхолдеры (?,?,?,...)
+
+    query = f"""
+        SELECT movieId, COALESCE(url, 'No')
+        FROM movie_covers
+        WHERE movieId IN ({placeholders})
+    """
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, movie_ids)
+
+        # Преобразуем результаты в словарь {movieId: url}
+        result_dict = dict(cursor.fetchall())
+
+    # Формируем итоговый список с учетом отсутствующих значений
+    return [result_dict.get(movie_id, "static/no_cover.png") for movie_id in movie_ids]
 
 
 @st.cache_data
@@ -136,7 +137,7 @@ def get_top_movies(movies, ratings, n_top=10, watch_limit=30):
         .head(n_top)
         .merge(movies, on="movieId")
     )
-    df["urls"] = get_img_urls(df.title.to_list())
+    df["urls"] = get_movie_covers(df.movieId.to_list())
     df = df[["title", "mean", "count", "urls"]]
     df.columns = ["Movie title", "Mean rating", "Number of ratings", "Cover"]
     return df
@@ -199,12 +200,14 @@ def get_user_last_movies(userId, ratings, movies, _model, limit=3):
         + " / "
         + watched_movies["mean_raing"].apply(lambda x: str(round(x, 1)))
     )
-    watched_movies.drop(columns=["userId", "timestamp", "movieId"], inplace=True)
-    watched_movies = watched_movies[["title", "user_rating / movie_rating", "genres"]]
+    watched_movies.drop(columns=["userId", "timestamp"], inplace=True)
+    watched_movies = watched_movies[["movieId", "title", "user_rating / movie_rating", "genres"]]
     watched_movies["genres"] = watched_movies["genres"].apply(
         lambda x: ", ".join(x.split("|")[:2])
     )
-    watched_movies["urls"] = get_img_urls(watched_movies.title.to_list())
+
+    watched_movies["urls"] = get_movie_covers(watched_movies.movieId.to_list())
+    watched_movies.drop(["movieId"], axis=1, inplace=True)
     watched_movies.columns = ["Title", "User/Movie rating", "Genres", "Cover"]
     return watched_movies
 
@@ -224,7 +227,7 @@ def get_recommended_movies(userId, ratings, movies, _model, limit=5):
     recommended_movies["predicted_rating"] = recommended_movies.predicted_rating.apply(
         lambda x: round(x, 1)
     )
-    recommended_movies["urls"] = get_img_urls_big(recommended_movies.title.to_list())
+    recommended_movies["urls"] = get_movie_covers(recommended_movies.movieId.to_list())
 
     return recommended_movies[["title", "genres", "predicted_rating", "urls"]]
 

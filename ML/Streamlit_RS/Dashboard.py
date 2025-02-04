@@ -7,6 +7,9 @@ from helpers.functions import (get_csv_data, get_movies_statistics,
 RATINGS_DF_PATH = "./datasets/ratings_df.csv"
 MOVIES_DF_PATH = "./datasets/movies_df.csv"
 LOGO_PATH = "static/hiclipart.com.png"
+NO_COVER = "static/no_cover.png"
+
+
 WATCH_LIMIT=50
 # ---Logo----------------
 st.logo(LOGO_PATH, link="https://streamlit.io/gallery", icon_image=LOGO_PATH)
@@ -87,7 +90,7 @@ with st.container():
 
 loading_data = st.text("Loading top movies...")
 top_movies_df = get_top_movies(movies_df, ratings_df, n_top=10, watch_limit=WATCH_LIMIT)
-# top_movies_df = top_movies_df.style.set_properties(**{'line-height': '100px'})
+#top_movies_df = top_movies_df.style.set_properties(**{'line-height': '100px'})
 loading_data.text("")
 
 st.markdown(f"### Top-{top_movies_df.shape[0]} movies by mean rating",
@@ -102,6 +105,6 @@ st.data_editor(
     hide_index=True,
 )
 
-# st.cache_data.clear()
+#st.cache_data.clear()
 # st.json(user_data_df)
 #st.cache_data.clear()
